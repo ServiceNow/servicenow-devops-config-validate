@@ -1,0 +1,1 @@
+# servicenow-devops-config-validate
