@@ -1,0 +1,30 @@
+{
+    "name": "servicenow-devops-config-validate",
+    "version": "0.1.0",
+    "main": "dist/index.js",
+    "description": "A Github Action to upload and validate configuration files to ServiceNow DevOps Config",
+    "private": false,
+    "scripts": {
+        "build": "ncc build src/main.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+ssh://git@github.com:ServiceNow/servicenow-devops-config-validate.git"
+    },
+    "keywords": [
+        "devops",
+        "servicenow",
+        "change"
+    ],
+    "author": "ServiceNow",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/ServiceNow/servicenow-devops-config-validate/issues"
+    },
+    "homepage": "https://github.com/ServiceNow/servicenow-devops-config-validate/#readme",
+    "dependencies": {
+        "@actions/core": "^1.8.2",
+        "axios": "^0.24.0",
+        "follow-redirects": "^1.15.2"
+    }
+}

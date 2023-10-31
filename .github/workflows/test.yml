@@ -1,0 +1,60 @@
+name: Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+         
+  validate_config_data:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: development
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+        
+    - name: Upload File and Validate
+      uses: ./
+      #uses: ServiceNow/servicenow-devops-config-validate@v0.1.0
+      with:
+        instance-url: ${{ secrets.SN_INSTANCE }}
+        devops-integration-user-name: ${{ secrets.USERNAME }}
+        devops-integration-user-password: ${{ secrets.PASSWORD }}
+        application-name: PaymentServiceApp
+        target: deployable
+        target-name: ${{ vars.DEPLOYABLE }}
+        name-path: paymentService
+        config-file-path: ./data/paymentService.json
+        data-format: json
+
+    - name: Print Response
+      run: | 
+         echo "Response: ${{ steps.http_request.outputs.response }}"
+
+  deploy_dev:
+    runs-on: ubuntu-latest
+    needs: validate_config_data
+    environment: development
+
+    steps:
+        - name: deploy
+          run: | 
+            echo "deploying to dev"
