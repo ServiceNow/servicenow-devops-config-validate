@@ -1,6 +1,7 @@
 const {getInput, setOutput, setFailed, info, warning} = require('@actions/core');
 const axios = require('axios');
 const { uploadConfig } = require('./lib/upload-config');
+const { doGet, doPost } = require('./lib/cdm-request');
 
 const main = async() => {
     try {
@@ -17,10 +18,8 @@ const main = async() => {
       const configFilePath = getInput('config-file-path', { required: true });
       const namePath = getInput('name-path');
       const changesetNumber = getInput('changeset');
-    } catch (error) {
-      setFailed(error.message);
-    }
-    try {
+
+
       response = await uploadConfig({
         snInstance,
         snUser,
