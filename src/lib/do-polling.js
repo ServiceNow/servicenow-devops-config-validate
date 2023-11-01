@@ -1,4 +1,4 @@
-const { doGet, doPost } = require('./do-request'); 
+const { doGet, doPost } = require('./do-request');
 
 async function exponentialPolling(
   requestFunction,

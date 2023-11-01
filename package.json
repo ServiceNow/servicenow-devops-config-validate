@@ -12,9 +12,10 @@
         "url": "git+ssh://git@github.com:ServiceNow/servicenow-devops-config-validate.git"
     },
     "keywords": [
-        "devops",
         "servicenow",
-        "change"
+        "devops",
+        "config",
+        "validate"
     ],
     "author": "ServiceNow",
     "license": "ISC",

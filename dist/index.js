@@ -28810,15 +28810,16 @@ async function doGet({ url, username, passwd, queryParams }) {
   return response;
 }
 
-async function doPost({ url, username, passwd, postData }) {
-  
+async function doPost({ url, username, passwd, postData, queryParams }) {
+  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
+  console.log(urlWithParams);
   const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
   const headers = {
     'Authorization': `Basic ${base64Credentials}`,
     'Content-Type': 'text/plain'
   };
  
-  const response = await makeHttpRequest(url, 'POST', postData, headers);
+  const response = await makeHttpRequest(urlWithParams, 'POST', postData, headers);
   return response;
 }
 
@@ -28834,7 +28835,7 @@ const { getInput, setOutput, setFailed, info, warning } = __nccwpck_require__(41
 const { exponentialPolling } = __nccwpck_require__(4135); 
 const { doGet, doPost } = __nccwpck_require__(9077);
 async function uploadConfig({
-	snInstance,
+	snInstanceURL,
 	snUser,
 	snPassword,
 	target,
@@ -28849,16 +28850,81 @@ async function uploadConfig({
 	changesetNumber
 }) {
 	info('UploadConfig begins....');
-	// Define query parameters as an object
-	const uploadId = "dc7d8fe84352311010eb598e75b8f2b0";
-	await checkUploadStatus(snInstance, snUser, snPassword, uploadId, appName);
+	const uploadId = await upload(snInstanceURL, snUser, snPassword, target, appName, deployableName, collectionName, dataFormat, autoValidate, autoCommit, configFilePath, namePath, changesetNumber);
+	await checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, appName);
+	
 }
 
-async function checkUploadStatus(snInstance, snUser, snPassword, uploadId, application, failOnPolicyError) {
-	const uploadAPIEndpoint = `${snInstance}/api/sn_cdm/applications/upload-status/${uploadId}`;
-	const conditionCheck = (response) => {
+async function upload(snInstanceURL, snUser, snPassword, target, appName, deployableName, collectionName, dataFormat, autoValidate, autoCommit, configFilePath, namePath, changesetNumber) {
+    let uploadFileEndpoint = `${snInstanceURL}/api/sn_cdm/applications/uploads/`;
+  
+  	let queryParams = {
+			appName: appName,
+			dataFormat: dataFormat,
+			autoCommit : autoCommit,
+			autoValidate : autoValidate,
+
+		};
+  
+    if (changesetNumber && changesetNumber !== '') {
+    	queryParams.changesetNumber = changesetNumber;
+    }
+  
+    if (deployableName && deployableName !== '') {
+      queryParams.deployableName = deployableName;
+    }
+  
+    if (collectionName && collectionName !== '') {
+      queryParams.collectionName = collectionName;
+    }
+
+    if (namePath && namePath !== '') {
+      queryParams.namePath = namePath;
+    }
+  
+    switch (target) {
+      case 'component':
+        uploadFileEndpoint += "/components";
+        break;
+      case 'collection':
+        uploadFileEndpoint += "/collections";
+        break;
+      case 'deployable':
+        uploadFileEndpoint += "/deployables";
+        break;
+      default:
+        error(`Target should be one of: component, collection, or deployable, ${target} provided.`);
+        return;
+    }
+  
+    const fileContents = '{ "key_001" : "value_001" }'
+  
+   const conditionCheck = (response) => {
 		// Replace with your specific condition check logic
 		return response !== null;
+	};
+
+	// Start polling
+	const response = await exponentialPolling(async () => {
+
+		return await doPost({
+			url: uploadFileEndpoint,
+			username: snUser,
+			passwd: snPassword,
+			postData : fileContents,
+			queryParams: queryParams,
+		});
+	}, conditionCheck);
+	
+	return response.result.upload_id;
+	
+  }
+
+async function checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, application, failOnPolicyError) {
+	const uploadStatusEndpoint = `${snInstanceURL}/api/sn_cdm/applications/upload-status/${uploadId}`;
+	const conditionCheck = (response) => {
+		// Replace with your specific condition check logic
+		return response.result.state == "completed";
 	};
 
 	// Start polling
@@ -28869,14 +28935,16 @@ async function checkUploadStatus(snInstance, snUser, snPassword, uploadId, appli
 		};
 
 		return await doGet({
-			url: uploadAPIEndpoint,
+			url: uploadStatusEndpoint,
 			username: snUser,
 			passwd: snPassword,
 			queryParams: queryParams,
 		});
 	}, conditionCheck);
 	
-	info(JSON.stringify(response));
+	info(`Status of uploadId ${uploadId} : ${response.result.state}`);
+	setOutput('changeset-number', response.result.output.number);
+	return response.result.output.number;
 }
 
 module.exports = { uploadConfig };
@@ -29158,42 +29226,33 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const {getInput, setOutput, setFailed, info, warning} = __nccwpck_require__(4181);
+const axios = __nccwpck_require__(6805);
 const { uploadConfig } = __nccwpck_require__(969);
+
 
 const main = async() => {
     try {
-      // const snInstance = getInput('instance-url', { required: true });
-      // const snUser = getInput('devops-integration-user-name', { required: true });
-      // const snPassword = getInput('devops-integration-user-password', { required: true });
-      // const target = getInput('target', { required: true });
-      // const appName = getInput('application-name', { required: true });
-      // const collectionName = getInput('target-name');
-      // const deployableName = getInput('deployable-name');
-      // const dataFormat = getInput('data-format', { required: true });
-      // const autoValidate = getInput('auto-validate', { required: true });
-      // const autoCommit = getInput('auto-commit', { required: true });
-      // const configFilePath = getInput('config-file-path', { required: true });
-      // const namePath = getInput('name-path');
-      // const dataFormatAttributes = getInput('data-format-attributes');
-      // const changesetNumber = getInput('changeset');
-
-      const snInstance = "http://localhost:8080"
-      const snUser = "admin";
-      const snPassword = "admin";
-      const target = getInput('target');
-      const appName = getInput('application-name');
+      let snInstanceURL = getInput('instance-url', { required: true });
+      const snUser = getInput('devops-integration-user-name', { required: true });
+      const snPassword = getInput('devops-integration-user-password', { required: true });
+      const target = getInput('target', { required: true });
+      const appName = getInput('application-name', { required: true });
       const collectionName = getInput('target-name');
       const deployableName = getInput('deployable-name');
-      const dataFormat = getInput('data-format');
-      const autoValidate = getInput('auto-validate');
-      const autoCommit = getInput('auto-commit');
-      const configFilePath = getInput('config-file-path');
+      const dataFormat = getInput('data-format', { required: true });
+      const autoValidate = getInput('auto-validate', { required: true });
+      const autoCommit = getInput('auto-commit', { required: true });
+      const configFilePath = getInput('config-file-path', { required: true });
       const namePath = getInput('name-path');
       const dataFormatAttributes = getInput('data-format-attributes');
       const changesetNumber = getInput('changeset');
 
+      snInstanceURL = snInstanceURL.trim();
+      if (snInstanceURL.endsWith('/'))
+        snInstanceURL = snInstanceURL.slice(0, -1);
+        
       response = await uploadConfig({
-        snInstance,
+        snInstanceURL,
         snUser,
         snPassword,
         target,
@@ -29208,8 +29267,8 @@ const main = async() => {
         changesetNumber,
         dataFormatAttributes
       });
-    } catch (err) {
-        setFailed(err.message);
+    } catch (error) {
+        setFailed(error.message);
     }
 }
 
