@@ -66,22 +66,13 @@ async function upload(snInstanceURL, snUser, snPassword, target, appName, deploy
 
 	const fileContents = '{ "key_001" : "value_001" }'
 
-	const conditionCheck = (response) => {
-		// Replace with your specific condition check logic
-		return response !== null;
-	};
-
-	// Start polling
-	const response = await exponentialPolling(async () => {
-
-		return await doPost({
+	const response = await doPost({
 			url: uploadFileEndpoint,
 			username: snUser,
 			passwd: snPassword,
 			postData: fileContents,
 			queryParams: queryParams,
 		});
-	}, conditionCheck);
 
 	return response.result.upload_id;
 
@@ -90,7 +81,7 @@ async function upload(snInstanceURL, snUser, snPassword, target, appName, deploy
 async function checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, application, failOnPolicyError) {
 	const uploadStatusEndpoint = `${snInstanceURL}/api/sn_cdm/applications/upload-status/${uploadId}`;
 	const conditionCheck = (response) => {
-		// Replace with your specific condition check logic
+		// Wait till state is completed
 		return response.result.state == "completed";
 	};
 
