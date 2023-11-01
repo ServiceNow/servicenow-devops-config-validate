@@ -1,7 +1,5 @@
 const {getInput, setOutput, setFailed, info, warning} = require('@actions/core');
-const axios = require('axios');
 const { uploadConfig } = require('./lib/upload-config');
-const { doGet, doPost } = require('./lib/cdm-request');
 
 const main = async() => {
     try {
@@ -17,6 +15,7 @@ const main = async() => {
       const autoCommit = getInput('auto-commit', { required: true });
       const configFilePath = getInput('config-file-path', { required: true });
       const namePath = getInput('name-path');
+      const dataFormatAttributes = getInput('data-format-attributes');
       const changesetNumber = getInput('changeset');
 
 
@@ -33,10 +32,11 @@ const main = async() => {
         autoCommit,
         configFilePath,
         namePath,
-        changesetNumber
+        changesetNumber,
+        dataFormatAttributes
       });
     } catch (err) {
-        setFailed(error.message);
+        setFailed(err.message);
     }
 }
 

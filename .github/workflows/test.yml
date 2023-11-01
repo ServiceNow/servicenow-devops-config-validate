@@ -40,7 +40,7 @@ jobs:
         devops-integration-user-password: ${{ secrets.PASSWORD }}
         application-name: PaymentServiceApp
         target: deployable
-        target-name: ${{ vars.DEPLOYABLE }}
+        deployable-name: ${{ vars.DEPLOYABLE }}
         name-path: paymentService
         config-file-path: ./data/paymentService.json
         data-format: json

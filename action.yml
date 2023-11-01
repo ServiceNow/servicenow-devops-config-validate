@@ -31,6 +31,9 @@ inputs:
   data-format:
     description: "Format of the file to upload"
     required: true
+  data-format-attributes:
+    description: "Additional formatting attributes for the file to upload"
+    required: false
   auto-commit:
     description: "Commit the change set or not after the upload"
     required: false

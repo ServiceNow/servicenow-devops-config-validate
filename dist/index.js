@@ -28726,6 +28726,164 @@ exports["default"] = _default;
 
 /***/ }),
 
+/***/ 4135:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { doGet, doPost } = __nccwpck_require__(9077); 
+
+async function exponentialPolling(
+  requestFunction,
+  conditionCheck,
+  maxAttempts = 10,
+  initialInterval = 1000
+) {
+  let pollingInterval = initialInterval;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await requestFunction();
+
+      if (conditionCheck(response)) {
+        console.log('Polling successful. Condition met.');
+        return response;
+      } else {
+        console.log(`Attempt ${attempt}: Condition not met yet. Continuing polling.`);
+      }
+    } catch (error) {
+      console.error(`Attempt ${attempt}: Polling error - ${error.message}`);
+    }
+
+    if (attempt < maxAttempts) {
+      pollingInterval *= 2;
+      console.log(`Next attempt in ${pollingInterval / 1000} seconds.`);
+      await new Promise(resolve => setTimeout(resolve, pollingInterval));
+    } else {
+      console.log('Maximum polling attempts reached. Condition not met.');
+    }
+  }
+
+  return null; // Condition was not met within the maximum attempts
+}
+
+module.exports = { exponentialPolling };
+
+
+/***/ }),
+
+/***/ 9077:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const axios = __nccwpck_require__(6805);
+
+
+async function makeHttpRequest(url, method, data, headers) {
+  try {
+    const response = await axios({
+      url,
+      method,
+      data,
+      headers,
+    });
+
+    return response.data;
+  } catch (error) {
+    if (error.response) {
+      throw new Error(`Status code: ${error.response.status}. Response data: ${error.response.data}`);
+    } else if (error.request) {
+      throw new Error(`No response received. Error: ${error.message}`);
+    } else {
+      throw new Error(`Error: ${error.message}`);
+    }
+  }
+}
+
+async function doGet({ url, username, passwd, queryParams }) {
+  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
+
+  const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
+  const headers = {
+    'Authorization': `Basic ${base64Credentials}`,
+    'Content-Type': 'text/plain'
+  };
+ 
+  const response = await makeHttpRequest(urlWithParams, 'GET', null, headers);
+  return response;
+}
+
+async function doPost({ url, username, passwd, postData }) {
+  
+  const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
+  const headers = {
+    'Authorization': `Basic ${base64Credentials}`,
+    'Content-Type': 'text/plain'
+  };
+ 
+  const response = await makeHttpRequest(url, 'POST', postData, headers);
+  return response;
+}
+
+module.exports = { doGet, doPost };
+
+
+/***/ }),
+
+/***/ 969:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const { getInput, setOutput, setFailed, info, warning } = __nccwpck_require__(4181);
+const { exponentialPolling } = __nccwpck_require__(4135); 
+const { doGet, doPost } = __nccwpck_require__(9077);
+async function uploadConfig({
+	snInstance,
+	snUser,
+	snPassword,
+	target,
+	appName,
+	deployableName,
+	collectionName,
+	dataFormat,
+	autoValidate,
+	autoCommit,
+	configFilePath,
+	namePath,
+	changesetNumber
+}) {
+	info('UploadConfig begins....');
+	// Define query parameters as an object
+	const uploadId = "dc7d8fe84352311010eb598e75b8f2b0";
+	await checkUploadStatus(snInstance, snUser, snPassword, uploadId, appName);
+}
+
+async function checkUploadStatus(snInstance, snUser, snPassword, uploadId, application, failOnPolicyError) {
+	const uploadAPIEndpoint = `${snInstance}/api/sn_cdm/applications/upload-status/${uploadId}`;
+	const conditionCheck = (response) => {
+		// Replace with your specific condition check logic
+		return response !== null;
+	};
+
+	// Start polling
+	const response = await exponentialPolling(async () => {
+		const queryParams = {
+			param1: 'value1',
+			param2: 'value2',
+		};
+
+		return await doGet({
+			url: uploadAPIEndpoint,
+			username: snUser,
+			passwd: snPassword,
+			queryParams: queryParams,
+		});
+	}, conditionCheck);
+	
+	info(JSON.stringify(response));
+}
+
+module.exports = { uploadConfig };
+
+
+/***/ }),
+
 /***/ 7969:
 /***/ ((module) => {
 
@@ -29000,26 +29158,58 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const {getInput, setOutput, setFailed, info, warning} = __nccwpck_require__(4181);
-const axios = __nccwpck_require__(6805);
-
+const { uploadConfig } = __nccwpck_require__(969);
 
 const main = async() => {
     try {
-      const snInstance = getInput('instance-url', { required: true });
-      const snUser = getInput('devops-integration-user-name', { required: true });
-      const snPassword = getInput('devops-integration-user-password', { required: true });
-      const target = getInput('target', { required: true });
-      const appName = getInput('application-name', { required: true });
-      const targetName = getInput('target-name');
-      
-      const dataFormat = getInput('data-format', { required: true });
-      const autoValidate = getInput('auto-validate', { required: true });
-      const autoCommit = getInput('auto-commit', { required: true });
-      const configFilePath = getInput('config-file-path', { required: true });
+      // const snInstance = getInput('instance-url', { required: true });
+      // const snUser = getInput('devops-integration-user-name', { required: true });
+      // const snPassword = getInput('devops-integration-user-password', { required: true });
+      // const target = getInput('target', { required: true });
+      // const appName = getInput('application-name', { required: true });
+      // const collectionName = getInput('target-name');
+      // const deployableName = getInput('deployable-name');
+      // const dataFormat = getInput('data-format', { required: true });
+      // const autoValidate = getInput('auto-validate', { required: true });
+      // const autoCommit = getInput('auto-commit', { required: true });
+      // const configFilePath = getInput('config-file-path', { required: true });
+      // const namePath = getInput('name-path');
+      // const dataFormatAttributes = getInput('data-format-attributes');
+      // const changesetNumber = getInput('changeset');
+
+      const snInstance = "http://localhost:8080"
+      const snUser = "admin";
+      const snPassword = "admin";
+      const target = getInput('target');
+      const appName = getInput('application-name');
+      const collectionName = getInput('target-name');
+      const deployableName = getInput('deployable-name');
+      const dataFormat = getInput('data-format');
+      const autoValidate = getInput('auto-validate');
+      const autoCommit = getInput('auto-commit');
+      const configFilePath = getInput('config-file-path');
       const namePath = getInput('name-path');
+      const dataFormatAttributes = getInput('data-format-attributes');
       const changesetNumber = getInput('changeset');
-    } catch (error) {
-      setFailed(error.message);
+
+      response = await uploadConfig({
+        snInstance,
+        snUser,
+        snPassword,
+        target,
+        appName,
+        deployableName,
+        collectionName,
+        dataFormat,
+        autoValidate,
+        autoCommit,
+        configFilePath,
+        namePath,
+        changesetNumber,
+        dataFormatAttributes
+      });
+    } catch (err) {
+        setFailed(err.message);
     }
 }
 
