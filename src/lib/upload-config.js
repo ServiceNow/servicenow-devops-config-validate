@@ -87,16 +87,17 @@ async function checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, ap
 
 	// Start polling
 	const response = await exponentialPolling(async () => {
+		/* Url params can be added like this
 		const queryParams = {
 			param1: 'value1',
 			param2: 'value2',
 		};
-
+		*/
 		return await doGet({
 			url: uploadStatusEndpoint,
 			username: snUser,
 			passwd: snPassword,
-			queryParams: queryParams,
+			queryParams: null,
 		});
 	}, conditionCheck);
 

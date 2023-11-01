@@ -1,6 +1,5 @@
 const axios = require('axios');
-
-
+const {info} = require('@actions/core');
 async function makeHttpRequest(url, method, data, headers) {
   try {
     const response = await axios({
@@ -22,29 +21,33 @@ async function makeHttpRequest(url, method, data, headers) {
   }
 }
 
-async function doGet({ url, username, passwd, queryParams }) {
-  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
-
+function constructHeaders(username, passwd) {
   const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
-  const headers = {
+  return {
     'Authorization': `Basic ${base64Credentials}`,
     'Content-Type': 'text/plain'
   };
+}
 
+function constructUrlWithParams(url, queryParams) {
+  return queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
+}
+
+async function doGet({ url, username, passwd, queryParams }) {
+  const headers = constructHeaders(username, passwd);
+  const urlWithParams = constructUrlWithParams(url, queryParams);
+  info(`Request : ${urlWithParams} initiating.`)
   const response = await makeHttpRequest(urlWithParams, 'GET', null, headers);
+  info(`Response : ${urlWithParams} received.`)
   return response;
 }
 
 async function doPost({ url, username, passwd, postData, queryParams }) {
-  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
-  console.log(urlWithParams);
-  const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
-  const headers = {
-    'Authorization': `Basic ${base64Credentials}`,
-    'Content-Type': 'text/plain'
-  };
-
+  const headers = constructHeaders(username, passwd);
+  const urlWithParams = constructUrlWithParams(url, queryParams);
+  info(`Request : ${urlWithParams} initiating.`)
   const response = await makeHttpRequest(urlWithParams, 'POST', postData, headers);
+  info(`Response : ${urlWithParams} received.`)
   return response;
 }
 
