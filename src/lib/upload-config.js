@@ -23,7 +23,7 @@ async function uploadConfig({
 }
 
 async function upload(snInstanceURL, snUser, snPassword, target, appName, deployableName, collectionName, dataFormat, autoValidate, autoCommit, configFilePath, namePath, changesetNumber) {
-	let uploadFileEndpoint = `${snInstanceURL}/api/sn_cdm/applications/uploads/`;
+	let uploadFileEndpoint = `${snInstanceURL}/api/sn_cdm/applications/uploads`;
 
 	let queryParams = {
 		appName: appName,

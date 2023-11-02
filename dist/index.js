@@ -28729,7 +28729,7 @@ exports["default"] = _default;
 /***/ 4135:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
-const { doGet, doPost } = __nccwpck_require__(9077); 
+const { doGet, doPost } = __nccwpck_require__(9077);
 
 async function exponentialPolling(
   requestFunction,
@@ -28774,8 +28774,7 @@ module.exports = { exponentialPolling };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const axios = __nccwpck_require__(6805);
-
-
+const {info} = __nccwpck_require__(4181);
 async function makeHttpRequest(url, method, data, headers) {
   try {
     const response = await axios({
@@ -28788,7 +28787,7 @@ async function makeHttpRequest(url, method, data, headers) {
     return response.data;
   } catch (error) {
     if (error.response) {
-      throw new Error(`Status code: ${error.response.status}. Response data: ${error.response.data}`);
+      throw new Error(`Status code: ${error.response.status}. Response data: ${JSON.stringify(error.response.data)}`);
     } else if (error.request) {
       throw new Error(`No response received. Error: ${error.message}`);
     } else {
@@ -28797,29 +28796,33 @@ async function makeHttpRequest(url, method, data, headers) {
   }
 }
 
-async function doGet({ url, username, passwd, queryParams }) {
-  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
-
+function constructHeaders(username, passwd) {
   const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
-  const headers = {
+  return {
     'Authorization': `Basic ${base64Credentials}`,
     'Content-Type': 'text/plain'
   };
- 
+}
+
+function constructUrlWithParams(url, queryParams) {
+  return queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
+}
+
+async function doGet({ url, username, passwd, queryParams }) {
+  const headers = constructHeaders(username, passwd);
+  const urlWithParams = constructUrlWithParams(url, queryParams);
+  info(`Request : ${urlWithParams} initiating.`)
   const response = await makeHttpRequest(urlWithParams, 'GET', null, headers);
+  info(`Response : ${urlWithParams} received.`)
   return response;
 }
 
 async function doPost({ url, username, passwd, postData, queryParams }) {
-  const urlWithParams = queryParams ? `${url}?${new URLSearchParams(queryParams)}` : url;
-  console.log(urlWithParams);
-  const base64Credentials = Buffer.from(`${username}:${passwd}`).toString('base64');
-  const headers = {
-    'Authorization': `Basic ${base64Credentials}`,
-    'Content-Type': 'text/plain'
-  };
- 
+  const headers = constructHeaders(username, passwd);
+  const urlWithParams = constructUrlWithParams(url, queryParams);
+  info(`Request : ${urlWithParams} initiating.`)
   const response = await makeHttpRequest(urlWithParams, 'POST', postData, headers);
+  info(`Response : ${urlWithParams} received.`)
   return response;
 }
 
@@ -28832,7 +28835,7 @@ module.exports = { doGet, doPost };
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const { getInput, setOutput, setFailed, info, warning } = __nccwpck_require__(4181);
-const { exponentialPolling } = __nccwpck_require__(4135); 
+const { exponentialPolling } = __nccwpck_require__(4135);
 const { doGet, doPost } = __nccwpck_require__(9077);
 async function uploadConfig({
 	snInstanceURL,
@@ -28852,96 +28855,88 @@ async function uploadConfig({
 	info('UploadConfig begins....');
 	const uploadId = await upload(snInstanceURL, snUser, snPassword, target, appName, deployableName, collectionName, dataFormat, autoValidate, autoCommit, configFilePath, namePath, changesetNumber);
 	await checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, appName);
-	
+
 }
 
 async function upload(snInstanceURL, snUser, snPassword, target, appName, deployableName, collectionName, dataFormat, autoValidate, autoCommit, configFilePath, namePath, changesetNumber) {
-    let uploadFileEndpoint = `${snInstanceURL}/api/sn_cdm/applications/uploads/`;
-  
-  	let queryParams = {
-			appName: appName,
-			dataFormat: dataFormat,
-			autoCommit : autoCommit,
-			autoValidate : autoValidate,
+	let uploadFileEndpoint = `${snInstanceURL}/api/sn_cdm/applications/uploads`;
 
-		};
-  
-    if (changesetNumber && changesetNumber !== '') {
-    	queryParams.changesetNumber = changesetNumber;
-    }
-  
-    if (deployableName && deployableName !== '') {
-      queryParams.deployableName = deployableName;
-    }
-  
-    if (collectionName && collectionName !== '') {
-      queryParams.collectionName = collectionName;
-    }
+	let queryParams = {
+		appName: appName,
+		dataFormat: dataFormat,
+		autoCommit: autoCommit,
+		autoValidate: autoValidate,
 
-    if (namePath && namePath !== '') {
-      queryParams.namePath = namePath;
-    }
-  
-    switch (target) {
-      case 'component':
-        uploadFileEndpoint += "/components";
-        break;
-      case 'collection':
-        uploadFileEndpoint += "/collections";
-        break;
-      case 'deployable':
-        uploadFileEndpoint += "/deployables";
-        break;
-      default:
-        error(`Target should be one of: component, collection, or deployable, ${target} provided.`);
-        return;
-    }
-  
-    const fileContents = '{ "key_001" : "value_001" }'
-  
-   const conditionCheck = (response) => {
-		// Replace with your specific condition check logic
-		return response !== null;
 	};
 
-	// Start polling
-	const response = await exponentialPolling(async () => {
+	if (changesetNumber && changesetNumber !== '') {
+		queryParams.changesetNumber = changesetNumber;
+	}
 
-		return await doPost({
+	if (deployableName && deployableName !== '') {
+		queryParams.deployableName = deployableName;
+	}
+
+	if (collectionName && collectionName !== '') {
+		queryParams.collectionName = collectionName;
+	}
+
+	if (namePath && namePath !== '') {
+		queryParams.namePath = namePath;
+	}
+
+	switch (target) {
+		case 'component':
+			uploadFileEndpoint += "/components";
+			break;
+		case 'collection':
+			uploadFileEndpoint += "/collections";
+			break;
+		case 'deployable':
+			uploadFileEndpoint += "/deployables";
+			break;
+		default:
+			error(`Target should be one of: component, collection, or deployable, ${target} provided.`);
+			return;
+	}
+
+	const fileContents = '{ "key_001" : "value_001" }'
+
+	const response = await doPost({
 			url: uploadFileEndpoint,
 			username: snUser,
 			passwd: snPassword,
-			postData : fileContents,
+			postData: fileContents,
 			queryParams: queryParams,
 		});
-	}, conditionCheck);
-	
+
 	return response.result.upload_id;
-	
-  }
+
+}
 
 async function checkUploadStatus(snInstanceURL, snUser, snPassword, uploadId, application, failOnPolicyError) {
 	const uploadStatusEndpoint = `${snInstanceURL}/api/sn_cdm/applications/upload-status/${uploadId}`;
 	const conditionCheck = (response) => {
-		// Replace with your specific condition check logic
+		// Wait till state is completed
 		return response.result.state == "completed";
 	};
 
 	// Start polling
 	const response = await exponentialPolling(async () => {
+		/* Url params can be added like this
 		const queryParams = {
 			param1: 'value1',
 			param2: 'value2',
 		};
-
+		*/
 		return await doGet({
 			url: uploadStatusEndpoint,
 			username: snUser,
 			passwd: snPassword,
-			queryParams: queryParams,
+			queryParams: null,
 		});
 	}, conditionCheck);
-	
+
 	info(`Status of uploadId ${uploadId} : ${response.result.state}`);
 	setOutput('changeset-number', response.result.output.number);
 	return response.result.output.number;

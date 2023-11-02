@@ -12,7 +12,7 @@ async function makeHttpRequest(url, method, data, headers) {
     return response.data;
   } catch (error) {
     if (error.response) {
-      throw new Error(`Status code: ${error.response.status}. Response data: ${error.response.data}`);
+      throw new Error(`Status code: ${error.response.status}. Response data: ${JSON.stringify(error.response.data)}`);
     } else if (error.request) {
       throw new Error(`No response received. Error: ${error.message}`);
     } else {
