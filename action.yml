@@ -1,0 +1,74 @@
+name: 'ServiceNow devops config validate'
+description: 'This is a Custom Action to upload and validate configuration files to ServiceNow DevOps Config'
+inputs:
+  instance-url:
+    description: "ServiceNow Instance"
+    required: true
+  devops-integration-user-name:
+    description: "ServiceNow Username"
+    required: true
+  devops-integration-user-password:
+    description: "ServiceNow Password"
+    required: true
+  application-name:
+    description: "Devops config application name"
+    required: true
+  target:
+    description: "Devops config object against which to upload (component|collection|deployable)"
+    required: true
+  deployable-name:
+    description: "Name of the deployable against which to upload"
+    required: true
+  collection-name:
+    description: "Name of the collection against which to upload"
+    required: false
+  name-path:
+    description: "Path to upload against in the data model"
+    required: false
+  config-file-path:
+    description: "Path of the files to upload"
+    required: true
+  data-format:
+    description: "Format of the files to upload"
+    required: true
+  data-format-attributes:
+    description: "Additional formatting attributes for the file to upload"
+    required: false
+  auto-commit:
+    description: "Commit the change set or not after the upload"
+    required: false
+    default: true
+  auto-validate:
+    description: "Validate config data after upload and publish on success (true|false)"
+    required: true
+    default: true
+  auto-publish:
+    description: "Publish the snapshot after the validation is success (true|false)"
+    required: true
+    default: true
+  changeset:
+    description: "Devops Config Changeset number"
+    required: false
+  snapshot-validation-timeout:
+    description: "Snapshot validation timeout in minutes"
+    required: false
+    default: 60
+  terminate-on-policy-validation-failures:
+    description: "Boolean (true or false) input to terminate the GitHub workflow upon policy validation failures." 
+    required: false
+    default: true
+outputs:
+  changeset-number:
+    description: "Devops config changeset number"
+  snapshot-name:
+    description: "Name of the snapshot validated"
+  validation-status:
+    description: "Validation status"
+  validation-results:
+    description: "Validation results"
+branding:
+  icon: 'refresh-ccw'
+  color: 'green'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
