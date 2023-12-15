@@ -1,0 +1,74 @@
+name: 'ServiceNow DevOps Config Validate'
+description: 'Validate configuration data before deployment using ServiceNow DevOps Config.'
+inputs:
+  instance-url:
+    description: "ServiceNow instance URL."
+    required: true
+  devops-integration-username:
+    description: "DevOps Config integration username."
+    required: true
+  devops-integration-user-password:
+    description: "DevOps Config integration user password."
+    required: true
+  application-name:
+    description: "DevOps Config application name."
+    required: true
+  target:
+    description: "Data model target where configuration files are uploaded. Example: component, collection, deployable."
+    required: true
+  deployable-name:
+    description: "Deployable name in the DevOps Config data model."
+    required: true
+  collection-name:
+    description: "Collection name in the data model. Required when target is collection."
+    required: false
+  name-path:
+    description: "Name path of the node in the data model where the configuration files are uploaded."
+    required: false
+  config-file-path:
+    description: "File path when uploading a single file or file path pattern when uploading multiple files to the data model."
+    required: true
+  data-format:
+    description: "Data format of the configuration files. Example: CSV, INI, JSON, Properties, RAW, XML, YAML."
+    required: true
+  data-format-attributes:
+    description: "Extended data format attributes for parsing configuration data."
+    required: false
+  auto-commit:
+    description: "Boolean (true or false) input to commit configuration data upon successful upload."
+    required: true
+    default: true
+  auto-validate:
+    description: "Boolean (true or false) input to validate configuration data upon successful commit."
+    required: true
+    default: true
+  auto-publish:
+    description: "Boolean (true or false) input to publish configuration data upon successful validation."
+    required: true
+    default: true
+  changeset:
+    description: "Open changeset associated with the upload action. If not provided, a new changeset is created."
+    required: false
+  snapshot-validation-timeout:
+    description: "Maximum time in minutes for validation to complete before failing the action."
+    required: false
+    default: 60
+  terminate-on-policy-validation-failures:
+    description: "Boolean (true or false) input to terminate the GitHub workflow upon policy validation failures." 
+    required: false
+    default: true
+outputs:
+  changeset-number:
+    description: "Changeset number associated with the upload action."
+  snapshot-name:
+    description: "Name of the latest snapshot of the deployable."
+  validation-status:
+    description: "Validation status of the snapshot. Example: passed, passed_with_exception, failed, execution_error, not_validated."
+  validation-results:
+    description: "Validation results in the JSON format for the snapshot."
+branding:
+  icon: 'refresh-ccw'
+  color: 'green'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
