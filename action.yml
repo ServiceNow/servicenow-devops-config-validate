@@ -56,7 +56,7 @@ inputs:
   terminate-on-policy-validation-failures:
     description: "Boolean (true or false) input to terminate the GitHub workflow upon policy validation failures." 
     required: false
-    default: true
+    default: false
 outputs:
   changeset-number:
     description: "Changeset number associated with the upload action."
