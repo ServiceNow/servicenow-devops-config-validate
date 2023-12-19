@@ -1,0 +1,99 @@
+name: Uploading multiple config files in a single commit
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  # Sample build job.
+  build: 
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+  
+  # Job for uploading and validating the config data.     
+  validate_config_data:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: development
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+
+   # uploading the xml files
+    - name: ServiceNow Devops Config Validate XML
+      id: upload_and_validate_xml
+      uses : ./
+      # uses: ServiceNow/servicenow-devops-config-validate@v1.0.0-beta
+      with:
+        instance-url: ${{ secrets.SN_INSTANCE_URL }}
+        devops-integration-username: ${{ secrets.SN_DEVOPS_CONFIG_USERNAME }}
+        devops-integration-user-password: ${{ secrets.SN_DEVOPS_CONFIG_PASSWORD }}
+        application-name: PaymentDemo
+        target: component
+        deployable-name: Production
+        name-path: web-api-v1.0
+        auto-commit: false
+        auto-validate: true
+        auto-publish: true
+        config-file-path: data/infra/v1/*.xml
+        data-format: xml
+        snapshot-validation-timeout: 60
+        terminate-on-policy-validation-failures: true
+ 
+    # uploading the json files
+    - name: ServiceNow Devops Config Validate JSON
+      id: upload_and_validate_json
+      uses: ./
+      # uses: ServiceNow/servicenow-devops-config-validate@v1.0.0-beta
+      with:
+        instance-url: ${{ secrets.SN_INSTANCE_URL }}
+        devops-integration-username: ${{ secrets.SN_DEVOPS_CONFIG_USERNAME }}
+        devops-integration-user-password: ${{ secrets.SN_DEVOPS_CONFIG_PASSWORD }}
+        application-name: PaymentDemo
+        target: component
+        deployable-name: Production
+        name-path: web-api-v1.0
+        auto-commit: true
+        auto-validate: true
+        auto-publish: true
+        config-file-path: data/infra/prod/*.json
+        data-format: json
+        snapshot-validation-timeout: 60
+        terminate-on-policy-validation-failures: true
+        changeset : ${{ steps.upload_and_validate_xml.outputs.changeset-number }}
+
+    # This step upload the validation results as json file.
+    - name: Upload validation results
+      if: ${{ success() || (failure() && steps.upload_and_validate.outputs.validation-status != '') }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: validation-results
+        path: validation-results.json
+
+    # Use below step for uploading the sarif file
+    # Remove below step upload sarif is not required
+    - name: Upload SARIF Results
+      if: ${{ success() || (failure() && steps.upload_and_validate.outputs.validation-status != '') }}
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: validation-results.sarif
+        category: Production
+      continue-on-error: true
+
