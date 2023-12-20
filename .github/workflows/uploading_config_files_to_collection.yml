@@ -37,8 +37,7 @@ jobs:
         node-version: 16
         
     - name: ServiceNow Devops Config Validate
-      uses: ./
-      #uses: ServiceNow/servicenow-devops-config-validate@v1.0.0-beta
+      uses: ServiceNow/servicenow-devops-config-validate@v1.0.0-beta
       with:
         instance-url: ${{ secrets.SN_INSTANCE_URL }}
         devops-integration-username: ${{ secrets.SN_DEVOPS_CONFIG_USERNAME }}
@@ -58,16 +57,17 @@ jobs:
 
     # This step upload the validation results as json file.
     - name: Upload validation results
-      if: ${{ success() || (failure() && steps.upload_and_validate.outputs.validation-status != '') }}
+      if: ${{ success() || failure() }}
       uses: actions/upload-artifact@v2
       with:
         name: validation-results
         path: validation-results.json
+      continue-on-error: true
 
     # Use below step for uploading the sarif file
     # Remove below step upload sarif is not required
     - name: Upload SARIF Results
-      if: ${{ success() || (failure() && steps.upload_and_validate.outputs.validation-status != '') }}
+      if: ${{ success() || failure() }}
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: validation-results.sarif
