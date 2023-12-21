@@ -33268,7 +33268,7 @@ async function generateValidationResults(response, appName, deployableName, snap
         if (result.decision === 'compliant_with_exception') {
             if (!passedWithExceptionPolicies.has(result["policy.name"])) {
                 passedWithExceptionPolicies.add(result["policy.name"]);
-                info(`Policy '${result["policy.name"]}' is passed with exception.`);
+                info(`Policy '${result["policy.name"]}' passed with exception.`);
             }
             addResultToPolicyMap(passedPoliciesResultMap, result["policy.name"], result);
         }
