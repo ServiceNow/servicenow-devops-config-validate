@@ -43,7 +43,7 @@ async function fetchResults(snInstanceURL, deployableName, snapshotRec) {
     const cdmPolicyValidationResultEndpoint = `${snInstanceURL}${constants.API.CDM_POLICY_VALIDATION_RESULT}`;
     const queryParams = {
         sysparm_query: `snapshot.sys_id=${snapshotRec.sysId}^is_latest=true^ORDERBYpolicy.name`,
-        sysparm_fields: "policy.name,node_path_ui,description,type"
+        sysparm_fields: "policy.name,node_path_ui,description,type,policy_execution.output"
     };
     response = await doGet({
         url: cdmPolicyValidationResultEndpoint,
@@ -94,6 +94,7 @@ async function generateValidationResults(response, appName, deployableName, snap
     // Array for keeping policy names
     let failedPolicies = new Set();
     let warningPolicies = new Set();
+    let passedWithExceptionPolicies = new Set();
     let failedPoliciesResultMap = new Map();
     let warningPoliciesResultMap = new Map();
     let passedPoliciesResultMap = new Map();
@@ -108,7 +109,19 @@ async function generateValidationResults(response, appName, deployableName, snap
 
     // Set the github annotation errors for failed policies.
     response.result.forEach(result => {
-        if (result.type === 'failure') {
+        // Get the policy execution output
+        const policyExecution = JSON.parse(result['policy_execution.output']);
+        result.decision = policyExecution.decision;
+        // Delete the policy_execution.output as it has redundant informations same as sn_cdm_policy_validation_result
+        delete result['policy_execution.output'];
+        if (result.decision === 'compliant_with_exception') {
+            if (!passedWithExceptionPolicies.has(result["policy.name"])) {
+                passedWithExceptionPolicies.add(result["policy.name"]);
+                info(`Policy '${result["policy.name"]}' passed with exception.`);
+            }
+            addResultToPolicyMap(passedPoliciesResultMap, result["policy.name"], result);
+        }
+        else if (result.type === 'failure') {
             if (!failedPolicies.has(result["policy.name"])) {
                 failedPolicies.add(result["policy.name"]);
                 error(`Policy '${result["policy.name"]}' is non-compliant. Check the validation results for details.`);
