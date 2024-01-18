@@ -19,7 +19,7 @@
         "upload"
     ],
     "author": "ServiceNow",
-    "license": "ISC",
+    "license": "MIT",
     "bugs": {
         "url": "https://github.com/ServiceNow/servicenow-devops-config-validate/issues"
     },
